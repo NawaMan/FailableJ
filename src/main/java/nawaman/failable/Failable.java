@@ -373,6 +373,9 @@ public class Failable {
          * 
          * @param tail  the function to pipe to.
          * @return  the new function.
+         * 
+         * @param <R2> the return type of the tail function.
+         * @param <T2> the exception type of the tail function.
          */
         public default <R2, T2 extends Throwable> Function<V, R2, RuntimeException> pipeTo(Function<R, R2, T2> tail) {
             return value-> {
@@ -387,6 +390,10 @@ public class Failable {
          * 
          * @param tail  the function to pipe to.
          * @return  the new function.
+         * 
+         * @param <V2> the second input type of the tail function.
+         * @param <R2> the return type of the tail function.
+         * @param <T2> the exception type of the tail function.
          */
         public default <V2, R2, T2 extends Throwable> Function2<V, V2, R2, RuntimeException> pipeTo(Function2<R, V2, R2, T2> tail) {
             return (value, value2)-> {
