@@ -19,7 +19,7 @@ import lombok.val;
 /**
  * Failable actions.
  * 
- * @author NawaMan -- nawa@nawaman.net
+ * @author NawaMan -- nawaman@dssb.io
  */
 public class Failable {
     
@@ -369,6 +369,34 @@ public class Failable {
         }
         
         /**
+         * Create a new function that take the result of this function as input of the given function.
+         * 
+         * @param tail  the function to pipe to.
+         * @return  the new function.
+         */
+        public default <R2, T2 extends Throwable> Function<V, R2, RuntimeException> pipeTo(Function<R, R2, T2> tail) {
+            return value-> {
+                val mid = this.gracefully().apply(value);
+                val end = tail.gracefully().apply(mid);
+                return end;
+            };
+        }
+        
+        /**
+         * Create a new function that take the result of this function as input of the given function.
+         * 
+         * @param tail  the function to pipe to.
+         * @return  the new function.
+         */
+        public default <V2, R2, T2 extends Throwable> Function2<V, V2, R2, RuntimeException> pipeTo(Function2<R, V2, R2, T2> tail) {
+            return (value, value2)-> {
+                val mid = this.gracefully().apply(value);
+                val end = tail.gracefully().apply(mid, value2);
+                return end;
+            };
+        }
+        
+        /**
          * Convert to a regular function and throw FailableException if there is an exception. 
          * 
          * @return  Java Function.
@@ -410,7 +438,7 @@ public class Failable {
      * @param <T>  the type of the thrown exception.
      **/
     @FunctionalInterface
-    public static interface BiFunction<V1, V2, R, T extends Throwable> {
+    public static interface Function2<V1, V2, R, T extends Throwable> {
         
         /**
          * Run this function. 
@@ -440,10 +468,20 @@ public class Failable {
          * @param value1
          *          the first value to be used.
          * @return  Failable function.
-         * @throws T  the thrown exception.
          **/
-        public default Function<V2, R, T> of(V1 value1) throws T {
+        public default Function<V2, R, T> of(V1 value1) {
             return asFunctionFor(value1);
+        }
+        
+        /**
+         * Convert to a supplier by currying the given value.
+         * 
+         * @param value2
+         *          the second value to be used.
+         * @return  Failable function.
+         **/
+        public default Function<V1, R, T> of2(V2 value2) {
+            return flip().asFunctionFor(value2);
         }
         
         /**
@@ -452,10 +490,20 @@ public class Failable {
          * @param supplier1
          *          the supplier of the first value to be used.
          * @return  Failable function.
-         * @throws T  the thrown exception.
          **/
-        public default Function<V2, R, T> of(java.util.function.Supplier<V1> supplier1) throws T {
+        public default Function<V2, R, T> of(java.util.function.Supplier<V1> supplier1) {
             return asFunctionFor(supplier1);
+        }
+        
+        /**
+         * Convert to a supplier by currying the given value.
+         * 
+         * @param supplier1
+         *          the supplier of the first value to be used.
+         * @return  Failable function.
+         **/
+        public default Function<V1, R, T> of2(java.util.function.Supplier<V2> supplier1) {
+            return flip().asFunctionFor(supplier1);
         }
         
         /**
@@ -484,7 +532,7 @@ public class Failable {
          * 
          * @return the new BiFunction with the parameters position swapped.
          */
-        public default BiFunction<V2, V1, R, T> flip() {
+        public default Function2<V2, V1, R, T> flip() {
             return (value2, value1)->{
                 return this.apply(value1, value2);
             };
@@ -546,6 +594,420 @@ public class Failable {
                 } catch (Throwable t) {
                     return null;
                 }
+            };
+        }
+    }
+    
+    /**
+     * Failable tri-function (function with 3 parameters).
+     * 
+     * @param <V1> the input data type.
+     * @param <V2> the input data type.
+     * @param <V3> the input data type.
+     * @param <R>  the returned data type.
+     * @param <T>  the type of the thrown exception.
+     **/
+    @FunctionalInterface
+    public static interface Function3<V1, V2, V3, R, T extends Throwable> {
+        
+        /**
+         * Run this function. 
+         * 
+         * @param value1  the first input value.
+         * @param value2  the second input value.
+         * @param value3  the third input value.
+         * @return  the returned value.
+         * @throws T  the thrown exception.
+         **/
+        public R apply(V1 value1, V2 value2, V3 value3) throws T;
+        
+        /**
+         * Run this function. 
+         * 
+         * @param value1  the first input value.
+         * @param value2  the second input value.
+         * @param value3  the third input value.
+         * @return  the returned value.
+         * @throws T  the thrown exception.
+         **/
+        public default R of(V1 value1, V2 value2, V3 value3) throws T {
+            return apply(value1, value2, value3);
+        }
+        
+        /**
+         * Convert to a supplier by currying the given value.
+         * 
+         * @param value1
+         *          the first value to be used.
+         * @return  Failable function.
+         * @throws T  the thrown exception.
+         **/
+        public default Function2<V2, V3, R, T> of(V1 value1) throws T {
+            return asFunctionFor(value1);
+        }
+        
+        /**
+         * Convert to a supplier by currying the given value.
+         * 
+         * @param supplier1
+         *          the supplier of the first value to be used.
+         * @return  Failable function.
+         * @throws T  the thrown exception.
+         **/
+        public default Function2<V2, V3, R, T> of(java.util.function.Supplier<V1> supplier1) throws T {
+            return asFunctionFor(supplier1);
+        }
+        
+        /**
+         * Run this function. 
+         * 
+         * @param value1  the first input value.
+         * @param value2  the second input value.
+         * @param value3  the third input value.
+         * @return  the returned value.
+         * @throws T  the thrown exception.
+         **/
+        public default R between(V1 value1, V2 value2, V3 value3) throws T {
+            return apply(value1, value2, value3);
+        }
+        
+        /**
+         * Swap the location of the first and second parameters.
+         * 
+         * @return the new BiFunction with the parameters position swapped.
+         */
+        public default Function3<V2, V1, V3, R, T> flip12() {
+            return (value2, value1, value3)->{
+                return this.apply(value1, value2, value3);
+            };
+        }
+        
+        /**
+         * Swap the location of the first and third parameters.
+         * 
+         * @return the new BiFunction with the parameters position swapped.
+         */
+        public default Function3<V3, V2, V1, R, T> flip13() {
+            return (value3, value2, value1)->{
+                return this.apply(value1, value2, value3);
+            };
+        }
+        
+        /**
+         * Swap the location of the first and third parameters.
+         * 
+         * @return the new BiFunction with the parameters position swapped.
+         */
+        public default Function3<V1, V3, V2, R, T> flip23() {
+            return (value1, value3, value2)->{
+                return this.apply(value1, value2, value3);
+            };
+        }
+        
+        /**
+         * Convert to a supplier by currying the given value.
+         * 
+         * @param value1
+         *          the first value to be used.
+         * @return  Failable runnable.
+         **/
+        public default Function2<V2, V3, R, T> asFunctionFor(V1 value1) {
+            return (value2, value3)->{
+                return this.apply(value1, value2, value3);
+            };
+        }
+        
+        /**
+         * Convert to a supplier by currying the given value.
+         * 
+         * @param supplier1 
+         *          the supplier for the value1 to be used.
+         * @return  Failable runnable.
+         **/
+        public default Function2<V2, V3, R, T> asFunctionFor(java.util.function.Supplier<V1> supplier1) {
+            return (value2, value3)->{
+                val value1 = supplier1.get();
+                return this.apply(value1, value2, value3);
+            };
+        }
+    }
+    
+    /**
+     * Failable quadri-function (function with 4 parameters).
+     * 
+     * @param <V1> the input data type.
+     * @param <V2> the input data type.
+     * @param <V3> the input data type.
+     * @param <V4> the input data type.
+     * @param <R>  the returned data type.
+     * @param <T>  the type of the thrown exception.
+     **/
+    @FunctionalInterface
+    public static interface Function4<V1, V2, V3, V4, R, T extends Throwable> {
+        
+        /**
+         * Run this function. 
+         * 
+         * @param value1  the first input value.
+         * @param value2  the second input value.
+         * @param value3  the third input value.
+         * @param value4  the forth input value.
+         * @return  the returned value.
+         * @throws T  the thrown exception.
+         **/
+        public R apply(V1 value1, V2 value2, V3 value3, V4 value4) throws T;
+        
+        /**
+         * Run this function. 
+         * 
+         * @param value1  the first input value.
+         * @param value2  the second input value.
+         * @param value3  the third input value.
+         * @param value4  the forth input value.
+         * @return  the returned value.
+         * @throws T  the thrown exception.
+         **/
+        public default R of(V1 value1, V2 value2, V3 value3, V4 value4) throws T {
+            return apply(value1, value2, value3, value4);
+        }
+        
+        /**
+         * Convert to a supplier by currying the given value.
+         * 
+         * @param value1
+         *          the first value to be used.
+         * @return  Failable function.
+         * @throws T  the thrown exception.
+         **/
+        public default Function3<V2, V3, V4, R, T> of(V1 value1) throws T {
+            return asFunctionFor(value1);
+        }
+        
+        /**
+         * Convert to a supplier by currying the given value.
+         * 
+         * @param supplier1
+         *          the supplier of the first value to be used.
+         * @return  Failable function.
+         * @throws T  the thrown exception.
+         **/
+        public default Function3<V2, V3, V4, R, T> of(java.util.function.Supplier<V1> supplier1) throws T {
+            return asFunctionFor(supplier1);
+        }
+        
+        /**
+         * Run this function. 
+         * 
+         * @param value1  the first input value.
+         * @param value2  the second input value.
+         * @param value3  the third input value.
+         * @param value4  the forth input value.
+         * @return  the returned value.
+         * @throws T  the thrown exception.
+         **/
+        public default R between(V1 value1, V2 value2, V3 value3, V4 value4) throws T {
+            return apply(value1, value2, value3, value4);
+        }
+        
+        /**
+         * Swap the location of the first and second parameters.
+         * 
+         * @return the new BiFunction with the parameters position swapped.
+         */
+        public default Function4<V2, V1, V3, V4, R, T> flip12() {
+            return (value2, value1, value3, value4)->{
+                return this.apply(value1, value2, value3, value4);
+            };
+        }
+        
+        /**
+         * Swap the location of the first and third parameters.
+         * 
+         * @return the new BiFunction with the parameters position swapped.
+         */
+        public default Function4<V3, V2, V1, V4, R, T> flip13() {
+            return (value3, value2, value1, value4)->{
+                return this.apply(value1, value2, value3, value4);
+            };
+        }
+        
+        /**
+         * Swap the location of the first and third parameters.
+         * 
+         * @return the new BiFunction with the parameters position swapped.
+         */
+        public default Function4<V1, V3, V2, V4, R, T> flip23() {
+            return (value1, value3, value2, value4)->{
+                return this.apply(value1, value2, value3, value4);
+            };
+        }
+        
+        /**
+         * Convert to a supplier by currying the given value.
+         * 
+         * @param value1
+         *          the first value to be used.
+         * @return  Failable runnable.
+         **/
+        public default Function3<V2, V3, V4, R, T> asFunctionFor(V1 value1) {
+            return (value2, value3, value4)->{
+                return this.apply(value1, value2, value3, value4);
+            };
+        }
+        
+        /**
+         * Convert to a supplier by currying the given value.
+         * 
+         * @param supplier1 
+         *          the supplier for the value1 to be used.
+         * @return  Failable runnable.
+         **/
+        public default Function3<V2, V3, V4, R, T> asFunctionFor(java.util.function.Supplier<V1> supplier1) {
+            return (value2, value3, value4)->{
+                val value1 = supplier1.get();
+                return this.apply(value1, value2, value3, value4);
+            };
+        }
+    }
+    
+    /**
+     * Failable quinque-function (function with 5 parameters).
+     * 
+     * @param <V1> the input data type.
+     * @param <V2> the input data type.
+     * @param <V3> the input data type.
+     * @param <V4> the input data type.
+     * @param <V5> the input data type.
+     * @param <R>  the returned data type.
+     * @param <T>  the type of the thrown exception.
+     **/
+    @FunctionalInterface
+    public static interface Function5<V1, V2, V3, V4, V5, R, T extends Throwable> {
+        
+        /**
+         * Run this function. 
+         * 
+         * @param value1  the first input value.
+         * @param value2  the second input value.
+         * @param value3  the third input value.
+         * @param value4  the forth input value.
+         * @param value5  the fifth input value.
+         * @return  the returned value.
+         * @throws T  the thrown exception.
+         **/
+        public R apply(V1 value1, V2 value2, V3 value3, V4 value4, V5 value5) throws T;
+        
+        /**
+         * Run this function. 
+         * 
+         * @param value1  the first input value.
+         * @param value2  the second input value.
+         * @param value3  the third input value.
+         * @param value4  the forth input value.
+         * @param value5  the fifth input value.
+         * @return  the returned value.
+         * @throws T  the thrown exception.
+         **/
+        public default R of(V1 value1, V2 value2, V3 value3, V4 value4, V5 value5) throws T {
+            return apply(value1, value2, value3, value4, value5);
+        }
+        
+        /**
+         * Convert to a supplier by currying the given value.
+         * 
+         * @param value1
+         *          the first value to be used.
+         * @return  Failable function.
+         * @throws T  the thrown exception.
+         **/
+        public default Function4<V2, V3, V4, V5, R, T> of(V1 value1) throws T {
+            return asFunctionFor(value1);
+        }
+        
+        /**
+         * Convert to a supplier by currying the given value.
+         * 
+         * @param supplier1
+         *          the supplier of the first value to be used.
+         * @return  Failable function.
+         * @throws T  the thrown exception.
+         **/
+        public default Function4<V2, V3, V4, V5, R, T> of(java.util.function.Supplier<V1> supplier1) throws T {
+            return asFunctionFor(supplier1);
+        }
+        
+        /**
+         * Run this function. 
+         * 
+         * @param value1  the first input value.
+         * @param value2  the second input value.
+         * @param value3  the third input value.
+         * @param value4  the forth input value.
+         * @param value5  the fifth input value.
+         * @return  the returned value.
+         * @throws T  the thrown exception.
+         **/
+        public default R between(V1 value1, V2 value2, V3 value3, V4 value4, V5 value5) throws T {
+            return apply(value1, value2, value3, value4, value5);
+        }
+        
+        /**
+         * Swap the location of the first and second parameters.
+         * 
+         * @return the new BiFunction with the parameters position swapped.
+         */
+        public default Function5<V2, V1, V3, V4, V5, R, T> flip12() {
+            return (value2, value1, value3, value4, value5)->{
+                return this.apply(value1, value2, value3, value4, value5);
+            };
+        }
+        
+        /**
+         * Swap the location of the first and third parameters.
+         * 
+         * @return the new BiFunction with the parameters position swapped.
+         */
+        public default Function5<V3, V2, V1, V4, V5, R, T> flip13() {
+            return (value3, value2, value1, value4, value5)->{
+                return this.apply(value1, value2, value3, value4, value5);
+            };
+        }
+        
+        /**
+         * Swap the location of the first and third parameters.
+         * 
+         * @return the new BiFunction with the parameters position swapped.
+         */
+        public default Function5<V1, V3, V2, V4, V5, R, T> flip23() {
+            return (value1, value3, value2, value4, value5)->{
+                return this.apply(value1, value2, value3, value4, value5);
+            };
+        }
+        
+        /**
+         * Convert to a supplier by currying the given value.
+         * 
+         * @param value1
+         *          the first value to be used.
+         * @return  Failable runnable.
+         **/
+        public default Function4<V2, V3, V4, V5, R, T> asFunctionFor(V1 value1) {
+            return (value2, value3, value4, value5)->{
+                return this.apply(value1, value2, value3, value4, value5);
+            };
+        }
+        
+        /**
+         * Convert to a supplier by currying the given value.
+         * 
+         * @param supplier1 
+         *          the supplier for the value1 to be used.
+         * @return  Failable runnable.
+         **/
+        public default Function4<V2, V3, V4, V5, R, T> asFunctionFor(java.util.function.Supplier<V1> supplier1) {
+            return (value2, value3, value4, value5)->{
+                val value1 = supplier1.get();
+                return this.apply(value1, value2, value3, value4, value5);
             };
         }
     }
