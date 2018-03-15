@@ -15,17 +15,14 @@
 //  ========================================================================
 package nawaman.failable;
 
-import static java.util.Arrays.asList;
 import static nawaman.failable.Failables.r;
-import static org.junit.Assert.assertEquals;
 
 import java.io.IOException;
-import java.util.function.BiPredicate;
-import java.util.function.Predicate;
 
 import org.junit.Test;
 
-import lombok.Value;
+import static org.junit.Assert.assertEquals;
+
 import lombok.val;
 import nawaman.failable.Failable.Function2;
 
@@ -64,30 +61,6 @@ public class FailableRunnableTest {
         
         val halfOf10 = half.asSupplierFor(10);
         assertEquals(5, halfOf10.value().intValue());
-    }
-    
-    // TODO - This might be moved out.
-    
-    public static <I, O1, I2> Predicate<I> only(
-            java.util.function.Function<I,O1> head,
-            java.util.function.BiPredicate<O1, I2> tail,
-            I2 tailInput) {
-        return i->tail.test(head.apply(i), tailInput);
-    }
-    
-    @Test
-    public void testStream() {
-        
-        @Value
-        class Person {
-            private String name;
-        }
-        
-        val persons = asList(new Person("John"), new Person("Jack"), new Person("Jim"));
-        val startsWithTerm = (BiPredicate<String, String>)String::startsWith;
-        persons.stream()
-        .filter(only(Person::getName, startsWithTerm, "Jo"))
-        .forEach(System.out::println);
     }
     
 }
