@@ -3,4 +3,4 @@
  * 
  * @author NawaMan -- nawa@nawaman.net
  */
-package nawaman.failable;
+package nawaman.failablej;

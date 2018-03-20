@@ -18,6 +18,9 @@ package nawaman.failable;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
+import nawaman.failablej.Failable;
+import nawaman.failablej.FailableException;
+
 /**
  * This spec helps document the desired behaviors of any Failable runnable.
  * 

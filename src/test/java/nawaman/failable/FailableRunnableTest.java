@@ -15,7 +15,7 @@
 //  ========================================================================
 package nawaman.failable;
 
-import static nawaman.failable.Failables.r;
+import static nawaman.failablej.Failables.r;
 
 import java.io.IOException;
 
@@ -24,7 +24,8 @@ import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 
 import lombok.val;
-import nawaman.failable.Failable.Function2;
+import nawaman.failablej.FailableException;
+import nawaman.failablej.Failable.Function2;
 
 /**
  * In case, there are future diversion between the default implementation an this implementation
